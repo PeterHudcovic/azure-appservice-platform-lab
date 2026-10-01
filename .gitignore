@@ -39,10 +39,14 @@ terraform.rc
 credentials.tfrc.json
 
 # Secrets and private key material
-secrets/
 .secrets/
-secrets.*
-*.secrets.*
+*.secret
+secrets.json
+secrets.yaml
+secrets.yml
+*.secrets.json
+*.secrets.yaml
+*.secrets.yml
 *.pem
 *.key
 *.p12
