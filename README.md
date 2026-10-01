@@ -2,7 +2,7 @@
 
 An educational project exploring the design of an application platform in Microsoft Azure.
 
-**Status: Implementation is in preparation.** This repository currently contains a design summary, a documented directory structure, and version-control exclusions. No Azure resources have been deployed for this project, and no application, infrastructure, or environment-isolation tests have been run. The capabilities below describe the planned design, not a working platform.
+**Status: Implementation is in preparation.** This repository contains a design summary, a documented directory structure, build logs, and an initial Terraform configuration for the development foundation layer. No infrastructure resources are defined in Terraform yet, and this configuration has not been used to deploy Azure resources. No application or environment-isolation tests have been run. The capabilities below describe the planned design.
 
 ## Planned design
 
@@ -20,11 +20,13 @@ An educational project exploring the design of an application platform in Micros
 
 ## Current scope
 
-This repository contains introductory documentation, a directory structure for future infrastructure code, and a `.gitignore` file. Terraform implementation, automation workflows, deployment, and a license have not been added.
+The development foundation layer contains Terraform version constraints, provider settings, input variables, an anonymized configuration example, and a provider dependency lock file. Resource definitions, reusable module implementations, remote state storage, automation workflows, and a license have not been added.
+
+Work records: [01 - Preparation](docs/build-log/01-preparation.md) and [02 - Terraform Configuration](docs/build-log/02-terraform-configuration.md).
 
 Local Terraform directories, infrastructure state, saved plans, real environment configurations, secrets, private keys, and local editor settings are excluded from version control. Anonymized configuration examples may be committed using names such as `dev.example.tfvars`, `dev.example.tfvars.json`, `backend.example.hcl`, or `.env.example`. Examples must contain placeholders rather than real environment values or credentials.
 
-The `.terraform.lock.hcl` dependency lock file will remain eligible for version control when Terraform implementation is added.
+The development foundation's `.terraform.lock.hcl` dependency lock file is versioned to record the selected provider version and checksums. Dependency lock files should remain in version control.
 
 ## Repository structure
 
@@ -46,7 +48,7 @@ infra/
   modules/
 ```
 
-The `infra/` directory is reserved for infrastructure code. Each layer directory currently contains only a short description of its planned purpose. It will become a separate Terraform root configuration (a directory from which Terraform manages a set of resources), with its own Terraform state (infrastructure state). State storage and access controls have not yet been configured.
+The `infra/` directory holds infrastructure code and descriptions of the planned layers. The development foundation layer contains the initial Terraform configuration; the other layer directories currently contain documentation only. Each environment and layer is intended to have a separate Terraform root configuration (a directory from which Terraform manages a set of resources), with its own Terraform state (infrastructure state). Remote state storage and its access controls have not yet been configured.
 
 | Layer | Planned responsibility | Planned lifecycle |
 | --- | --- | --- |
