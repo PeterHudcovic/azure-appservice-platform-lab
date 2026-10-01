@@ -1,0 +1,90 @@
+# Local Terraform working directories and diagnostic logs
+.terraform/
+crash.log
+crash.*.log
+
+# Terraform infrastructure state and local state locks
+*.tfstate
+*.tfstate.*
+.terraform.tfstate.lock.info
+
+# Saved Terraform plans
+*.tfplan
+*.tfplan.*
+*.plan
+*.plan.*
+tfplan
+tfplan.*
+plan.out
+
+# Real environment values and backend configuration
+*.tfvars
+*.tfvars.json
+*.tfbackend
+*.tfbackend.json
+backend.hcl
+backend.*.hcl
+*.backend.hcl
+.env
+.env.*
+*.env
+
+# Local Terraform overrides, settings, and credentials
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+credentials.tfrc.json
+
+# Secrets and private key material
+secrets/
+.secrets/
+secrets.*
+*.secrets.*
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+.ssh/
+id_rsa
+id_rsa.*
+id_dsa
+id_dsa.*
+id_ecdsa
+id_ecdsa.*
+id_ed25519
+id_ed25519.*
+
+# Local editor settings and temporary files
+.vscode/
+.idea/
+*.code-workspace
+*.suo
+*.user
+*.swp
+*.swo
+*~
+
+# Allow anonymized configuration examples with placeholder values only
+!*.tfvars.example
+!*.example.tfvars
+!*.tfvars.json.example
+!*.example.tfvars.json
+!*.tfbackend.example
+!*.example.tfbackend
+!*.tfbackend.json.example
+!*.example.tfbackend.json
+!backend.example.hcl
+!*.backend.example.hcl
+!.env.example
+!*.env.example
+!*.example.env
+!secrets.example.*
+!*.secrets.example.*
+
+# Keep Terraform dependency locks versioned
+!.terraform.lock.hcl
