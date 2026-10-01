@@ -23,6 +23,8 @@
 | --- | --- | --- |
 | Created the public repository with an English design summary and version-control exclusions | Codex | [Initial commit](https://github.com/PeterHudcovic/azure-appservice-platform-lab/commit/d8c2d295978d87c38f5a782b92016f09bfdc2cd8) |
 | Added the documented environment and layer directory structure, preserving intervening repository changes | Codex | [Directory structure commit](https://github.com/PeterHudcovic/azure-appservice-platform-lab/commit/acccac095c45b7e262af64e424251b63dd07ecb9) |
+| Added the collaboration agreement and the first Preparation record | Codex | [Coordination commit](https://github.com/PeterHudcovic/azure-appservice-platform-lab/commit/9ce26b6f15587aaec88055e40e14fa7579164415) |
+| Completed the Preparation record with detailed results, lessons, and open items | Claude | Commit history of `docs/build-log/01-preparation.md` |
 
 The `infra/environments/` directory contains `development/`, `testing/`, and `production/`. Each has `layer-0-foundation/`, `layer-1-network-operations/`, and `layer-2-application/`. The `infra/modules/` directory is reserved for reusable infrastructure code. These directories currently contain explanatory README files only. The folder structure does not establish infrastructure isolation or replace the approved architectural reference.
 
@@ -33,7 +35,7 @@ Terraform implementation and automation pipelines are not present. Codex has not
 | Participant | Current responsibility or reported status |
 | --- | --- |
 | Peter | Performs the manual Azure preparation steps, assigns tasks, and approves changes |
-| Claude | Guides Preparation; reports no repository edits or unpublished local changes in the handoff supplied by Peter |
+| Claude | Completed the Preparation record on Peter's assignment; awaits the next assigned task |
 | Codex | Maintains the introductory repository documentation; awaits the next explicitly assigned implementation task |
 
 Current step record: [01 - Preparation](docs/build-log/01-preparation.md).
