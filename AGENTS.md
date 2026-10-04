@@ -29,21 +29,23 @@
 | Created the initial development foundation Terraform configuration | Peter, guided by Codex | Commit `a982397`; [configuration record](docs/build-log/02-terraform-configuration.md) |
 | Added the configuration build record | Peter, with assistant support | Commit `444c8e9` |
 | Synchronized the project overview, development foundation description, and coordination status with the initial configuration | Codex, on Peter's request | `README.md`, `infra/environments/development/layer-0-foundation/README.md`, and this file |
+| Added the development state storage, one state container per layer, a layer 0 data role, and the remote backend; migrated layer 0 state to Azure | Peter, guided by Claude | Commit `4c7b647`; [state bootstrap record](docs/build-log/03-development-state-bootstrap.md) |
+| Added the state bootstrap record and synchronized coordination status | Peter, guided by Claude | `docs/build-log/03-development-state-bootstrap.md`, `infra/environments/development/layer-0-foundation/README.md`, and this file |
 
 The `infra/environments/` directory contains `development/`, `testing/`, and `production/`. Each has `layer-0-foundation/`, `layer-1-network-operations/`, and `layer-2-application/`. The development foundation layer contains the initial Terraform configuration; the other layer directories contain documentation only. The `infra/modules/` directory is reserved for reusable infrastructure code and currently contains documentation only. The folder structure does not establish infrastructure isolation or replace the approved architectural reference.
 
-Terraform version constraints, provider settings, input variables, an anonymized example, and a provider dependency lock file are present for the development foundation. Resource definitions, reusable module implementations, remote state storage, and automation pipelines are not present. This configuration has not been used to deploy Azure resources. Preparation performed manually by Peter is recorded separately in the build log.
+The development foundation layer defines the Terraform state storage account, one private state container per layer, a data role for the layer 0 operator, and a remote backend. Its state is stored in Azure. Other foundation resources, reusable module implementations, the testing and production environments, and automation pipelines are not present. Preparation performed manually by Peter is recorded separately in the build log.
 
 ## Current coordination
 
 | Participant | Current responsibility or reported status |
 | --- | --- |
 | Peter | Edits configuration and runs commands during guided learning, assigns tasks, and approves changes |
-| Claude | Completed the Preparation record on Peter's assignment; awaits the next assigned task |
-| Codex | Guides Peter and reviews results in this chat; synchronized the documentation on Peter's explicit request |
+| Claude | Leads the development foundation Terraform work on Peter's assignment; explains and reviews, while Peter edits files and runs commands |
+| Codex | Not assigned to the development foundation layer during Claude's assignment; may review on Peter's request |
 
-Current step record: [02 - Terraform Configuration](docs/build-log/02-terraform-configuration.md). Earlier preparation is recorded in [01 - Preparation](docs/build-log/01-preparation.md).
+Current step record: [03 - Development State Bootstrap](docs/build-log/03-development-state-bootstrap.md). Earlier records: [01 - Preparation](docs/build-log/01-preparation.md) and [02 - Terraform Configuration](docs/build-log/02-terraform-configuration.md).
 
-Next proposed step: agree on resource ownership and the state-storage bootstrap approach before adding foundation resource definitions.
+Next proposed step: further development foundation resources (resource groups for layers 1 and 2, permanent managed identities, monitoring, package storage, a static public IP address for NAT, and the certificate and admin vaults).
 
-No new infrastructure implementation task is assigned in this file. Entries describe the latest recorded handoff, not live activity; confirm ownership before starting overlapping work.
+Claude is assigned to the development foundation layer. Entries describe the latest recorded handoff, not live activity; confirm ownership before starting overlapping work.
