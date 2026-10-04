@@ -31,10 +31,11 @@
 | Synchronized the project overview, development foundation description, and coordination status with the initial configuration | Codex, on Peter's request | `README.md`, `infra/environments/development/layer-0-foundation/README.md`, and this file |
 | Added the development state storage, one state container per layer, a layer 0 data role, and the remote backend; migrated layer 0 state to Azure | Peter, guided by Claude | Commit `4c7b647`; [state bootstrap record](docs/build-log/03-development-state-bootstrap.md) |
 | Added the state bootstrap record and synchronized coordination status | Peter, guided by Claude | `docs/build-log/03-development-state-bootstrap.md`, `infra/environments/development/layer-0-foundation/README.md`, and this file |
+| Added development foundation resources: resource groups, permanent managed identities, monitoring, shared package storage, NAT address, certificate and admin vaults, and the WAF certificate | Peter, guided by Claude | Commits `d14806b` to `618458f`; [foundation resources record](docs/build-log/04-development-foundation-resources.md) |
 
 The `infra/environments/` directory contains `development/`, `testing/`, and `production/`. Each has `layer-0-foundation/`, `layer-1-network-operations/`, and `layer-2-application/`. The development foundation layer contains the initial Terraform configuration; the other layer directories contain documentation only. The `infra/modules/` directory is reserved for reusable infrastructure code and currently contains documentation only. The folder structure does not establish infrastructure isolation or replace the approved architectural reference.
 
-The development foundation layer defines the Terraform state storage account, one private state container per layer, a data role for the layer 0 operator, and a remote backend. Its state is stored in Azure. Other foundation resources, reusable module implementations, the testing and production environments, and automation pipelines are not present. Preparation performed manually by Peter is recorded separately in the build log.
+The development foundation layer defines the Terraform state storage account and remote backend, resource groups for all layers, permanent managed identities, monitoring, shared package storage, a static NAT address, the certificate and admin vaults, and the WAF certificate. Its state is stored in Azure. Pipeline identities, the app registration, policy, budgets, PIM, Conditional Access, reusable module implementations, the testing and production environments, and automation pipelines are not present. Preparation performed manually by Peter is recorded separately in the build log.
 
 ## Current coordination
 
@@ -44,8 +45,8 @@ The development foundation layer defines the Terraform state storage account, on
 | Claude | Leads the development foundation Terraform work on Peter's assignment; explains and reviews, while Peter edits files and runs commands |
 | Codex | Not assigned to the development foundation layer during Claude's assignment; may review on Peter's request |
 
-Current step record: [03 - Development State Bootstrap](docs/build-log/03-development-state-bootstrap.md). Earlier records: [01 - Preparation](docs/build-log/01-preparation.md) and [02 - Terraform Configuration](docs/build-log/02-terraform-configuration.md).
+Current step record: [04 - Development Foundation Resources](docs/build-log/04-development-foundation-resources.md). Earlier records: [01 - Preparation](docs/build-log/01-preparation.md), [02 - Terraform Configuration](docs/build-log/02-terraform-configuration.md), and [03 - Development State Bootstrap](docs/build-log/03-development-state-bootstrap.md).
 
-Next proposed step: further development foundation resources (resource groups for layers 1 and 2, permanent managed identities, monitoring, package storage, a static public IP address for NAT, and the certificate and admin vaults).
+Next proposed step: remaining development foundation resources (pipeline identities and service connections, app registration, custom lock roles, Azure Policy, budgets, PIM, and Conditional Access).
 
 Claude is assigned to the development foundation layer. Entries describe the latest recorded handoff, not live activity; confirm ownership before starting overlapping work.
