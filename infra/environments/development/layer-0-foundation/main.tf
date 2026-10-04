@@ -210,3 +210,49 @@ resource "azurerm_role_assignment" "admin_cert_vault" {
   role_definition_name = "Key Vault Certificates Officer"
   principal_id         = data.azurerm_client_config.current.object_id
 }
+
+# Self-signed WAF certificate (lab limitation: a company would use its own certificate authority)
+resource "azurerm_key_vault_certificate" "waf" {
+  name         = "cert-app-${local.environment}"
+  key_vault_id = azurerm_key_vault.foundation["cert"].id
+
+  certificate_policy {
+    issuer_parameters {
+      name = "Self"
+    }
+
+    key_properties {
+      exportable = true
+      key_type   = "RSA"
+      key_size   = 2048
+      reuse_key  = false
+    }
+
+    lifetime_action {
+      action {
+        action_type = "EmailContacts"
+      }
+
+      trigger {
+        days_before_expiry = 30
+      }
+    }
+
+    secret_properties {
+      content_type = "application/x-pkcs12"
+    }
+
+    x509_certificate_properties {
+      subject            = "CN=app.${local.environment}.sits.internal"
+      validity_in_months = 12
+      key_usage          = ["digitalSignature", "keyEncipherment"]
+      extended_key_usage = ["1.3.6.1.5.5.7.3.1"]
+
+      subject_alternative_names {
+        dns_names = ["app.${local.environment}.sits.internal"]
+      }
+    }
+  }
+
+  depends_on = [azurerm_role_assignment.admin_cert_vault]
+}
