@@ -154,3 +154,18 @@ resource "azurerm_storage_container_immutability_policy" "packages" {
   protected_append_writes_enabled       = false
   locked                                = false
 }
+
+# Permanent outbound address for the layer 1 NAT Gateway, also used by Conditional Access
+resource "azurerm_public_ip" "nat" {
+  name                = "pip-sits-${local.environment}-nat-${local.region_code}"
+  resource_group_name = azurerm_resource_group.layers["network"].name
+  location            = azurerm_resource_group.layers["network"].location
+  sku                 = "Standard"
+  allocation_method   = "Static"
+  zones               = ["1"]
+  tags                = local.tags
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
