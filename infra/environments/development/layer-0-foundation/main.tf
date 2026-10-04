@@ -64,3 +64,29 @@ resource "azurerm_role_assignment" "tfstate_layer0_admin" {
   role_definition_name = "Storage Blob Data Contributor"
   principal_id         = data.azurerm_client_config.current.object_id
 }
+
+resource "azurerm_resource_group" "layers" {
+  for_each = {
+    network     = "rg-sits-${local.environment}-network-${local.region_code}"
+    application = "rg-sits-${local.environment}-app-${local.region_code}"
+    keyvault    = "rg-sits-${local.environment}-kv-${local.region_code}"
+  }
+
+  name     = each.value
+  location = var.location
+  tags     = local.tags
+}
+
+resource "azurerm_user_assigned_identity" "app" {
+  name                = "id-sits-${local.environment}-app-${local.region_code}"
+  resource_group_name = azurerm_resource_group.foundation.name
+  location            = azurerm_resource_group.foundation.location
+  tags                = local.tags
+}
+
+resource "azurerm_user_assigned_identity" "agw" {
+  name                = "id-sits-${local.environment}-agw-${local.region_code}"
+  resource_group_name = azurerm_resource_group.foundation.name
+  location            = azurerm_resource_group.foundation.location
+  tags                = local.tags
+}
