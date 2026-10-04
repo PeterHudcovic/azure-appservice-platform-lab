@@ -108,3 +108,49 @@ resource "azurerm_application_insights" "main" {
   application_type    = "web"
   tags                = local.tags
 }
+
+# Shared package storage for all environments (lab simplification: lives in the non-production subscription)
+resource "azurerm_storage_account" "packages" {
+  name                     = "stsitspkg${local.region_code}"
+  resource_group_name      = azurerm_resource_group.foundation.name
+  location                 = azurerm_resource_group.foundation.location
+  account_tier             = "Standard"
+  account_replication_type = "LRS"
+  account_kind             = "StorageV2"
+
+  min_tls_version                 = "TLS1_2"
+  https_traffic_only_enabled      = true
+  shared_access_key_enabled       = false
+  default_to_oauth_authentication = true
+  allow_nested_items_to_be_public = false
+  local_user_enabled              = false
+
+  blob_properties {
+    delete_retention_policy {
+      days = 7
+    }
+
+    container_delete_retention_policy {
+      days = 7
+    }
+  }
+
+  tags = local.tags
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "azurerm_storage_container" "packages" {
+  name                  = "packages"
+  storage_account_id    = azurerm_storage_account.packages.id
+  container_access_type = "private"
+}
+
+resource "azurerm_storage_container_immutability_policy" "packages" {
+  storage_container_resource_manager_id = azurerm_storage_container.packages.id
+  immutability_period_in_days           = 7
+  protected_append_writes_enabled       = false
+  locked                                = false
+}
