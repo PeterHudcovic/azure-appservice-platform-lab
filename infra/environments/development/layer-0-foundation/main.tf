@@ -169,3 +169,44 @@ resource "azurerm_public_ip" "nat" {
     prevent_destroy = true
   }
 }
+
+# Certificate vault and admin vault (approved deviation: public access from any address, protected by Entra ID and RBAC)
+resource "azurerm_key_vault" "foundation" {
+  for_each = {
+    cert  = "kv-sits-${local.environment}-cert-${local.region_code}"
+    admin = "kv-sits-${local.environment}-adm-${local.region_code}"
+  }
+
+  name                          = each.value
+  resource_group_name           = azurerm_resource_group.foundation.name
+  location                      = azurerm_resource_group.foundation.location
+  tenant_id                     = data.azurerm_client_config.current.tenant_id
+  sku_name                      = "standard"
+  rbac_authorization_enabled    = true
+  soft_delete_retention_days    = 7
+  purge_protection_enabled      = false
+  public_network_access_enabled = true
+
+  network_acls {
+    default_action = "Allow"
+    bypass         = "None"
+  }
+
+  tags = local.tags
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+
+resource "azurerm_role_assignment" "agw_cert_vault" {
+  scope                = azurerm_key_vault.foundation["cert"].id
+  role_definition_name = "Key Vault Secrets User"
+  principal_id         = azurerm_user_assigned_identity.agw.principal_id
+}
+
+resource "azurerm_role_assignment" "admin_cert_vault" {
+  scope                = azurerm_key_vault.foundation["cert"].id
+  role_definition_name = "Key Vault Certificates Officer"
+  principal_id         = data.azurerm_client_config.current.object_id
+}
