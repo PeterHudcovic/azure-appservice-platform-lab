@@ -45,6 +45,7 @@ Every pipeline stops before any change when the service connection points to an 
 | Anonymous request to `/` | HTTP 401 (sign-in required) |
 | Gateway backend health | Healthy |
 | App Service console logs in Log Analytics | Platform health probes on `/health` return 200 |
+| End-to-end test by Peter from the development Ops VM: `https://app.dev.sits.internal` | Demo page through the WAF after Entra ID sign-in: environment `dev`, package `20261005.1`, signed-in user Lab Admin (member of `grp-sits-dev-app-users`), Key Vault check OK. Sign-in without a client secret (federated credential on the application identity) works. The browser shows "Not secure", because the Ops VM does not trust the self-signed WAF certificate yet. |
 
 ## Issues and fixes
 
@@ -57,7 +58,7 @@ Every pipeline stops before any change when the service connection points to an 
 
 - `sits-infra-dev-l1` and `sits-infra-dev-l2` need additional roles before they can take over from the local runs (layer 0 reads, network join, private DNS, Network Watcher, flow log storage). Until then `temporary.tf` stays.
 - Branch policies on `main`, approvals and branch checks on the service connections and pools (configured with production).
-- Sign-in through the gateway from the Ops VM (Peter is now a member of `grp-sits-dev-app-users`); needs the WAF certificate in the Ops VM trust store.
+- Trust the public part of the self-signed WAF certificate on the Ops VM (Trusted Root store, through a VM extension in layer 1 as the design describes), so the browser no longer shows "Not secure".
 
 ## Next step
 
