@@ -256,3 +256,63 @@ resource "azurerm_key_vault_certificate" "waf" {
 
   depends_on = [azurerm_role_assignment.admin_cert_vault]
 }
+
+# Pipeline identities (federated with Azure DevOps service connections, no secrets)
+resource "azurerm_user_assigned_identity" "pipeline" {
+  for_each = toset(["infra-l1", "infra-l2", "deploy", "destroy"])
+
+  name                = "id-sits-${local.environment}-${each.key}-${local.region_code}"
+  resource_group_name = azurerm_resource_group.foundation.name
+  location            = azurerm_resource_group.foundation.location
+  tags                = local.tags
+}
+
+resource "azurerm_user_assigned_identity" "build" {
+  name                = "id-sits-build-${local.region_code}"
+  resource_group_name = azurerm_resource_group.foundation.name
+  location            = azurerm_resource_group.foundation.location
+  tags                = local.tags
+}
+
+locals {
+  pipeline_data_roles = {
+    infra_l1_state = {
+      principal_id = azurerm_user_assigned_identity.pipeline["infra-l1"].principal_id
+      role         = "Storage Blob Data Contributor"
+      scope        = azurerm_storage_container.tfstate["tfstate-layer1"].id
+    }
+    infra_l2_state = {
+      principal_id = azurerm_user_assigned_identity.pipeline["infra-l2"].principal_id
+      role         = "Storage Blob Data Contributor"
+      scope        = azurerm_storage_container.tfstate["tfstate-layer2"].id
+    }
+    destroy_state_l1 = {
+      principal_id = azurerm_user_assigned_identity.pipeline["destroy"].principal_id
+      role         = "Storage Blob Data Contributor"
+      scope        = azurerm_storage_container.tfstate["tfstate-layer1"].id
+    }
+    destroy_state_l2 = {
+      principal_id = azurerm_user_assigned_identity.pipeline["destroy"].principal_id
+      role         = "Storage Blob Data Contributor"
+      scope        = azurerm_storage_container.tfstate["tfstate-layer2"].id
+    }
+    build_packages = {
+      principal_id = azurerm_user_assigned_identity.build.principal_id
+      role         = "Storage Blob Data Contributor"
+      scope        = azurerm_storage_container.packages.id
+    }
+    deploy_packages = {
+      principal_id = azurerm_user_assigned_identity.pipeline["deploy"].principal_id
+      role         = "Storage Blob Data Reader"
+      scope        = azurerm_storage_container.packages.id
+    }
+  }
+}
+
+resource "azurerm_role_assignment" "pipeline_data" {
+  for_each = local.pipeline_data_roles
+
+  principal_id         = each.value.principal_id
+  role_definition_name = each.value.role
+  scope                = each.value.scope
+}
