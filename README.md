@@ -15,6 +15,7 @@ An educational project exploring the design of an application platform in Micros
 - **Three Terraform layers:** layer 0 the persistent foundation, layer 1 the network and operations resources, layer 2 the application platform; each layer and environment has its own state.
 - **Repeatable lifecycle:** layer 2 and then layer 1 can be removed while layer 0 remains; the application vault returns from soft delete with its secrets.
 - **Controlled delivery:** Azure DevOps builds one immutable package with a SHA-256 fingerprint; development and testing deploy it automatically, production only after approval, without rebuilding it. Private Managed DevOps Pools agents deploy through the private endpoints.
+- **Monitoring:** Log Analytics and Application Insights, with alerts for application health, gateway backend health, denied Key Vault access, and WAF matches.
 - **Governance:** Azure Policy for tags, the allowed region, HTTPS and TLS on web apps, and no public Key Vault access; budgets with alerts; in production PIM (Privileged Identity Management), report-only Conditional Access, and delete locks.
 
 ## Repository structure
@@ -28,7 +29,7 @@ infra/
       layer-0-foundation/
       layer-1-network-operations/
       layer-2-application/
-  modules/                   Reserved for the planned refactor into reusable modules
+  modules/                   Reserved for reusable modules (see Next steps)
 docs/build-log/              Step-by-step build records
 ```
 
@@ -38,7 +39,16 @@ docs/build-log/              Step-by-step build records
 | 1: Network and operations | Virtual network, network security, NAT, private DNS, vault private endpoints, Ops VM, Bastion, flow logs, private agent pools | Created before layer 2, removed after it |
 | 2: Application | Application vault, App Service, Application Gateway with WAF, DNS record, diagnostics | Created after layer 1, removed before it |
 
-Testing and production are copies of the development layers with environment values. Moving the shared code into `infra/modules/` is a planned next step.
+Testing and production are copies of the development layers with environment values. Layer 0 is applied by an administrator; layers 1 and 2 run through Azure DevOps infrastructure pipelines with their own identities, which apply only when the plan shows changes and then verify that a second plan shows no changes. Production applies only after manual approval of the plan.
+
+## Next steps
+
+Possible future improvements, not part of the current build:
+
+- **Terraform modules:** move the code shared by the three environments into reusable modules in `infra/modules/`.
+- **WAF Prevention mode:** switch the WAF policies from Detection to Prevention after reviewing the detected requests.
+- **Conditional Access enforcement:** switch the production Conditional Access policies from report-only to enforced after reviewing their sign-in reports.
+- **Certificate from a certificate authority:** replace the self-signed WAF certificates with certificates from a company certificate authority that the operations machines already trust.
 
 ## Configuration files
 

@@ -39,10 +39,13 @@
 | Added the demo application and the Azure DevOps pipelines (build, development, testing and production deploy, layer 1 and 2 infrastructure, destroy) | Claude, autonomously on Peter's assignment | Branch `claude/dev-layer2`; [application and pipelines record](docs/build-log/09-application-and-pipelines.md) |
 | Built the testing environment (layers 0, 1, 2) and its service connections | Claude, autonomously on Peter's assignment | Branch `claude/dev-layer2`; [testing record](docs/build-log/10-testing-environment.md) |
 | Built the production environment (layers 0, 1, 2) with Bastion Basic, PIM, report-only Conditional Access, lock roles, and delete locks | Claude, autonomously on Peter's assignment, production and Entra ID applies approved by Peter | Branch `claude/dev-layer2`; [production record](docs/build-log/11-production-environment.md) |
+| Added monitoring alerts, pipeline identity roles, and infrastructure pipelines for all three environments | Claude, on Peter's assignment; production layer 0 applied and production runs approved by Peter | Branch `claude/dev-layer2`; [alerts and pipelines record](docs/build-log/12-monitoring-alerts-and-infrastructure-pipelines.md) |
+| Documented the access and permissions matrix | Codex, on Peter's assignment | [access matrix](docs/build-log/13-access-matrix.md) |
+| Ran the acceptance checks and set up Ops VM trust of the WAF certificates | Claude, on Peter's assignment | Branch `claude/dev-layer2`; [acceptance record](docs/build-log/14-acceptance-checks-and-certificate-trust.md) |
 
-The `infra/environments/` directory contains `development/`, `testing/`, and `production/`. Each has `layer-0-foundation/`, `layer-1-network-operations/`, and `layer-2-application/`, and every layer contains Terraform configuration with its own state in Azure. Testing and production are copies of the development layers with environment values; the refactor into `infra/modules/` is a planned next step. The `pipelines/` directory contains the Azure DevOps pipelines and their shared templates, and `app/` contains the demo application.
+The `infra/environments/` directory contains `development/`, `testing/`, and `production/`. Each has `layer-0-foundation/`, `layer-1-network-operations/`, and `layer-2-application/`, and every layer contains Terraform configuration with its own state in Azure. Testing and production are copies of the development layers with environment values; a refactor into `infra/modules/` is listed as a possible future improvement in the README. The `pipelines/` directory contains the Azure DevOps pipelines and their shared templates, and `app/` contains the demo application.
 
-All nine layers were built locally by Lab Admin with temporary state roles (`temporary.tf` in each foundation layer). The infrastructure pipelines exist but need additional roles before they take over; then `temporary.tf` is removed. Conscious deviations from the design are recorded in build records 08, 10, and 11.
+All nine layers were first built locally by Lab Admin with temporary state roles (`temporary.tf` in each foundation layer). Layers 1 and 2 of all three environments now run through the Azure DevOps infrastructure pipelines and end with No changes (production after Peter's approval); removing `temporary.tf` waits for Peter's decision. Monitoring alerts, acceptance checks, and Ops VM trust of the WAF certificates are complete. Conscious deviations from the design are recorded in build records 08, 10, 11, 12, and 14.
 
 ## Current coordination
 
@@ -52,8 +55,8 @@ All nine layers were built locally by Lab Admin with temporary state roles (`tem
 | Claude | Builds all environments autonomously on Peter's assignment on the branch `claude/dev-layer2`; merge to `main` only with Peter's approval |
 | Codex | Not assigned during Claude's assignment; may review on Peter's request |
 
-Current step records: [08](docs/build-log/08-development-application.md), [09](docs/build-log/09-application-and-pipelines.md), [10](docs/build-log/10-testing-environment.md), and [11](docs/build-log/11-production-environment.md). Earlier records: [01](docs/build-log/01-preparation.md) to [07](docs/build-log/07-development-network-operations.md).
+Current step records: [12](docs/build-log/12-monitoring-alerts-and-infrastructure-pipelines.md), [13](docs/build-log/13-access-matrix.md) (Codex, access matrix at an earlier commit), and [14](docs/build-log/14-acceptance-checks-and-certificate-trust.md). Earlier records: [01](docs/build-log/01-preparation.md) to [11](docs/build-log/11-production-environment.md).
 
-Next proposed steps: production deployment of the approved package, monitoring alerts and acceptance checks, Ops VM trust of the WAF certificate, roles for the infrastructure pipelines, and the modules refactor.
+Next proposed steps: Peter's decision on removing `temporary.tf`, and the demonstration. Possible future improvements are listed under Next steps in the README.
 
 Entries describe the latest recorded handoff, not live activity; confirm ownership before starting overlapping work.
