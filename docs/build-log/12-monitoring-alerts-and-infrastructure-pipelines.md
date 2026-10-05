@@ -1,6 +1,6 @@
 # 12 - Monitoring Alerts and Infrastructure Pipelines
 
-**Status:** Alerts are in place in all three environments. The development and testing infrastructure pipelines run layers 1 and 2 from Azure DevOps and end with No changes. The production infrastructure pipelines exist with a plan stage and an approval stage; the production layer 0 roles they need are planned but not yet applied (the production apply waits for Peter), so no production infrastructure pipeline has run yet.
+**Status:** Alerts are in place in all three environments. The infrastructure pipelines of all three environments run layers 1 and 2 from Azure DevOps and end with No changes; production runs only after Peter's approval on the `prod-infra` environment.
 
 **Execution:** Claude wrote the configuration and ran the local steps with the Lab Admin account on the branch `claude/dev-layer2`. Pipeline definitions, permissions, and runs were created through the Azure DevOps REST API. Peter decided that the sign-in application client ID is passed as a variable instead of being looked up through Microsoft Graph.
 
@@ -78,7 +78,9 @@ No identity can assign roles. Known limits (also noted in build log 13): `Networ
 | Testing and production alerts | 5 added each; second plan No changes |
 | Development layer 0 roles | 13 added; second plan No changes |
 | Testing layer 0 roles | 16 added; second plan No changes |
-| Production layer 0 roles | Plan: 13 to add, 0 to change, 0 to destroy. Not applied: the production apply was not permitted for the assistant and waits for Peter |
+| Production layer 0 roles | Plan: 13 to add, 0 to change, 0 to destroy. The production apply was not permitted for the assistant; Peter applied it locally, second plan No changes (reported by Peter) |
+| `sits-infra-prod-l1` run 12 | Peter authorized `prod-infra-l1` and `prod-infra`. Plan stage: No changes, nothing applied. Peter approved. Apply stage: plan No changes, apply skipped, verification plan No changes |
+| `sits-infra-prod-l2` run 13 | Peter authorized `prod-infra-l2`, `mdp-sits-prod-infra-swc`, and `prod-infra`. Plan stage: No changes, nothing applied. Peter approved. Apply stage: plan No changes, apply skipped, verification plan No changes |
 | Layer 2 without Microsoft Graph lookup | Development, testing, and production plans: No changes. Development and testing state refreshed (refresh-only, no Azure change); production state still lists the old lookup, which is harmless |
 | `sits-infra-dev-l1` run 7 | Failed at plan: organization URL with trailing slash; nothing changed (refresh succeeded, so the roles were sufficient) |
 | `sits-infra-dev-l1` run 9 | Plan No changes, apply skipped, verification plan No changes |
@@ -89,8 +91,6 @@ No identity can assign roles. Known limits (also noted in build log 13): `Networ
 
 ## Remaining work
 
-1. Peter applies production layer 0 (`pipeline-access.tf`, 13 roles), then a second plan must show No changes.
-2. First runs of `sits-infra-prod-l1` and `sits-infra-prod-l2`: Peter authorizes the service connections, the production infrastructure pool, and `prod-infra`, reads the plan, and approves. Both must end with No changes.
-3. After the pipelines take over layers 1 and 2: remove `temporary.tf` in each layer 0 (the temporary Lab Admin state roles).
-4. Destroy pipeline: the destroy identities have the new read roles, `destroy-dev.yml` passes the new variables, and the `sits-destroy-dev` definition has the variables `alertEmail` and `appClientId`. Its authorizations (service connection `dev-destroy`, environment `dev-destroy`, infrastructure pool) are given on its first run; it has never run.
-5. Rebuilding layer 1 from a pipeline may need the pipeline identity to be allowed to register Managed DevOps Pools in Azure DevOps; not tested, because every run reported No changes.
+1. Remove `temporary.tf` in each layer 0 (the temporary Lab Admin state roles on the layer 1 and 2 state containers) now that the pipelines run layers 1 and 2. This removes Lab Admin role assignments, so it waits for Peter's decision; afterwards Lab Admin can no longer run layers 1 and 2 locally.
+2. Destroy pipeline: the destroy identities have the new read roles, `destroy-dev.yml` passes the new variables, and the `sits-destroy-dev` definition has the variables `alertEmail` and `appClientId`. Its authorizations (service connection `dev-destroy`, environment `dev-destroy`, infrastructure pool) are given on its first run; it has never run.
+3. Rebuilding layer 1 from a pipeline may need the pipeline identity to be allowed to register Managed DevOps Pools in Azure DevOps; not tested, because every run reported No changes.
