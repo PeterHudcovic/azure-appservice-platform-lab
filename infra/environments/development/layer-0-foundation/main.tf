@@ -317,16 +317,50 @@ resource "azurerm_role_assignment" "pipeline_data" {
   scope                = each.value.scope
 }
 
-# Trust between the dev-infra-l1 service connection and its identity (no secret)
-resource "azurerm_federated_identity_credential" "dev_infra_l1" {
-  name                      = "azure-devops-dev-infra-l1"
-  user_assigned_identity_id = azurerm_user_assigned_identity.pipeline["infra-l1"].id
+# Trust between each Azure DevOps service connection and its pipeline identity (no secrets)
+locals {
+  pipeline_identity_ids = merge(
+    { for key, identity in azurerm_user_assigned_identity.pipeline : key => identity.id },
+    { build = azurerm_user_assigned_identity.build.id }
+  )
+}
+
+resource "azurerm_federated_identity_credential" "pipeline" {
+  for_each = var.pipeline_federation_subjects
+
+  name                      = each.key == "build" ? "azure-devops-build" : "azure-devops-${local.environment}-${each.key}"
+  user_assigned_identity_id = local.pipeline_identity_ids[each.key]
   audience                  = ["api://AzureADTokenExchange"]
   issuer                    = "https://login.microsoftonline.com/${data.azurerm_client_config.current.tenant_id}/v2.0"
-  subject                   = var.dev_infra_l1_federation_subject
+  subject                   = each.value
 }
+
+moved {
+  from = azurerm_federated_identity_credential.dev_infra_l1
+  to   = azurerm_federated_identity_credential.pipeline["infra-l1"]
+}
+
 resource "azurerm_role_assignment" "infra_l1_network_contributor" {
   scope                = azurerm_resource_group.layers["network"].id
   role_definition_name = "Contributor"
   principal_id         = azurerm_user_assigned_identity.pipeline["infra-l1"].principal_id
+}
+
+# Management roles of the pipeline identities on the resource groups of their layers
+locals {
+  pipeline_management_roles = {
+    infra_l2_app    = { identity = "infra-l2", resource_group = "application" }
+    infra_l2_kv     = { identity = "infra-l2", resource_group = "keyvault" }
+    destroy_network = { identity = "destroy", resource_group = "network" }
+    destroy_app     = { identity = "destroy", resource_group = "application" }
+    destroy_kv      = { identity = "destroy", resource_group = "keyvault" }
+  }
+}
+
+resource "azurerm_role_assignment" "pipeline_management" {
+  for_each = local.pipeline_management_roles
+
+  scope                = azurerm_resource_group.layers[each.value.resource_group].id
+  role_definition_name = "Contributor"
+  principal_id         = azurerm_user_assigned_identity.pipeline[each.value.identity].principal_id
 }

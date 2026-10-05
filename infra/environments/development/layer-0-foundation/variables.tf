@@ -8,7 +8,7 @@ variable "location" {
   type        = string
 }
 
-variable "dev_infra_l1_federation_subject" {
-  description = "Subject identifier of the Azure DevOps service connection dev-infra-l1 (workload identity federation)."
-  type        = string
+variable "pipeline_federation_subjects" {
+  description = "Subject identifiers of the Azure DevOps service connections (workload identity federation), keyed by pipeline identity."
+  type        = map(string)
 }
