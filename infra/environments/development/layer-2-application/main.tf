@@ -83,3 +83,19 @@ data "azurerm_private_dns_zone" "main" {
   name                = each.value
   resource_group_name = data.azurerm_resource_group.layers["network"].name
 }
+
+output "app_url" {
+  value = "https://${local.app_host_name}"
+}
+
+output "gateway_private_ip" {
+  value = azurerm_application_gateway.main.frontend_ip_configuration[0].private_ip_address
+}
+
+output "web_app_default_hostname" {
+  value = azurerm_linux_web_app.main.default_hostname
+}
+
+output "app_vault_uri" {
+  value = azurerm_key_vault.app.vault_uri
+}
