@@ -11,3 +11,5 @@ pipeline_federation_subjects = {
 
 budget_amount        = 100
 budget_contact_email = "<alert-recipient@example.com>"
+
+azure_devops_billing_resource_group = "<azure-devops-billing-resource-group-name>"

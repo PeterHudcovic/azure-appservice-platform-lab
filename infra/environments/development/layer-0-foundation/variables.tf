@@ -22,3 +22,8 @@ variable "budget_contact_email" {
   description = "E-mail address that receives budget alerts."
   type        = string
 }
+
+variable "azure_devops_billing_resource_group" {
+  description = "Name of the resource group that Azure DevOps created for billing (exempt from the region policy)."
+  type        = string
+}
