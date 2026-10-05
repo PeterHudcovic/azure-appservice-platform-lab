@@ -316,3 +316,17 @@ resource "azurerm_role_assignment" "pipeline_data" {
   role_definition_name = each.value.role
   scope                = each.value.scope
 }
+
+# Trust between the dev-infra-l1 service connection and its identity (no secret)
+resource "azurerm_federated_identity_credential" "dev_infra_l1" {
+  name                      = "azure-devops-dev-infra-l1"
+  user_assigned_identity_id = azurerm_user_assigned_identity.pipeline["infra-l1"].id
+  audience                  = ["api://AzureADTokenExchange"]
+  issuer                    = "https://login.microsoftonline.com/${data.azurerm_client_config.current.tenant_id}/v2.0"
+  subject                   = var.dev_infra_l1_federation_subject
+}
+resource "azurerm_role_assignment" "infra_l1_network_contributor" {
+  scope                = azurerm_resource_group.layers["network"].id
+  role_definition_name = "Contributor"
+  principal_id         = azurerm_user_assigned_identity.pipeline["infra-l1"].principal_id
+}
