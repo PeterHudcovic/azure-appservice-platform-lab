@@ -138,7 +138,7 @@ resource "azurerm_linux_web_app" "main" {
     forward_proxy_convention = "Standard"
 
     active_directory_v2 {
-      client_id                  = data.azuread_application.app.client_id
+      client_id                  = var.app_client_id
       tenant_auth_endpoint       = "https://login.microsoftonline.com/${data.azurerm_client_config.current.tenant_id}/v2.0"
       client_secret_setting_name = "OVERRIDE_USE_MI_FIC_ASSERTION_CLIENTID"
     }

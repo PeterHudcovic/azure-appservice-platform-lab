@@ -1,0 +1,41 @@
+# Production layer 2 (application platform). Runs on the private infrastructure pool inside the network.
+# Manual start only. Pipeline variables (set in Azure DevOps, not in the repository): alertEmail, appClientId.
+# Stage 1 shows the plan and changes nothing. Stage 2 waits for manual approval on the prod-infra
+# environment, then plans again, applies only when there are changes, and verifies No changes.
+trigger: none
+pr: none
+
+stages:
+  - stage: plan
+    displayName: Production layer 2 plan
+    jobs:
+      - job: terraform_plan
+        displayName: Terraform plan layer 2
+        pool: mdp-sits-prod-infra-swc
+        steps:
+          - template: templates/terraform-steps.yml
+            parameters:
+              layerDirectory: infra/environments/production/layer-2-application
+              serviceConnection: prod-infra-l2
+              expectedSubscriptionName: sub-app-prod
+              planOnly: true
+              extraVariables: -var="alert_email=$(alertEmail)" -var="app_client_id=$(appClientId)"
+
+  - stage: apply
+    displayName: Production layer 2 apply (after approval)
+    dependsOn: plan
+    jobs:
+      - deployment: terraform
+        displayName: Terraform layer 2
+        pool: mdp-sits-prod-infra-swc
+        environment: prod-infra
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: templates/terraform-steps.yml
+                  parameters:
+                    layerDirectory: infra/environments/production/layer-2-application
+                    serviceConnection: prod-infra-l2
+                    expectedSubscriptionName: sub-app-prod
+                    extraVariables: -var="alert_email=$(alertEmail)" -var="app_client_id=$(appClientId)"
