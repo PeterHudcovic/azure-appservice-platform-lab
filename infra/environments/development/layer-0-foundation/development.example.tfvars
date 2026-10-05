@@ -8,3 +8,6 @@ pipeline_federation_subjects = {
   "destroy"  = "<subject-identifier-of-dev-destroy>"
   "build"    = "<subject-identifier-of-build>"
 }
+
+budget_amount        = 100
+budget_contact_email = "<alert-recipient@example.com>"

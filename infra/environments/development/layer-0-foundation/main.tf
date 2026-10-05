@@ -411,3 +411,39 @@ resource "azuread_app_role_assignment" "app_users" {
   principal_object_id = azuread_group.app_users.object_id
   resource_object_id  = azuread_service_principal.app.object_id
 }
+
+# Monthly budget for the whole non-production subscription (alerts only, nothing is stopped)
+resource "azurerm_consumption_budget_subscription" "nonprod" {
+  name            = "budget-sits-nonprod"
+  subscription_id = "/subscriptions/${var.subscription_id}"
+  amount          = var.budget_amount
+  time_grain      = "Monthly"
+
+  time_period {
+    start_date = "2026-10-01T00:00:00Z"
+  }
+
+  notification {
+    enabled        = true
+    threshold      = 80
+    operator       = "GreaterThan"
+    threshold_type = "Actual"
+    contact_emails = [var.budget_contact_email]
+  }
+
+  notification {
+    enabled        = true
+    threshold      = 100
+    operator       = "GreaterThan"
+    threshold_type = "Actual"
+    contact_emails = [var.budget_contact_email]
+  }
+
+  notification {
+    enabled        = true
+    threshold      = 100
+    operator       = "GreaterThan"
+    threshold_type = "Forecasted"
+    contact_emails = [var.budget_contact_email]
+  }
+}
