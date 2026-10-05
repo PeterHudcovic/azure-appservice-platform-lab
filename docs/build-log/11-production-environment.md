@@ -1,6 +1,6 @@
 # 11 - Production Environment
 
-**Status:** Infrastructure completed. Production layers 0, 1, and 2 are built in the separate Pay-As-You-Go production subscription and match the configuration (`terraform plan` reports no changes). The production deployment of the approved package is recorded below once it has run.
+**Status:** Completed. Production layers 0, 1, and 2 are built in the separate Pay-As-You-Go production subscription and match the configuration (`terraform plan` reports no changes). The same package as development and testing was deployed after Peter's approval and passes its health and sign-in checks.
 
 **Execution:** Claude wrote the configuration and ran it locally with the Lab Admin account on the branch `claude/dev-layer2`. Peter approved the layer 0 applies (they include Entra ID, PIM, and Conditional Access changes) and authorized the Azure DevOps resources. Long production applies ran as detached processes with logs outside the repository, after a window crash had interrupted one apply (see Incident).
 
@@ -46,6 +46,8 @@
 | Layer 1 | 84 to add; second plan No changes |
 | Layer 2 | 17 to add (including two locks); second plan No changes |
 | Quotas | Dsv6 10 vCPU and Managed DevOps Pools DADSv5 5 vCPU in the production subscription |
+| Deploy run 6 (`sits-deploy-prod`, package `20261005.1`, the same as development and testing) | Peter authorized the service connection, pool, and environment and approved the `prod-app` check; SHA-256 verified, deployed through the private `.scm` endpoint, health check HTTP 200 with `"environment": "prod"` and Key Vault access (after five 503 responses during the first start), anonymous request to `/` refused |
+| Gateway backend health | Healthy |
 
 ## Incident and fixes
 
@@ -57,4 +59,4 @@
 
 ## Next step
 
-Production deployment of the approved package, monitoring, and acceptance checks.
+Monitoring alerts and acceptance checks.
