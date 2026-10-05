@@ -27,3 +27,8 @@ variable "azure_devops_billing_resource_group" {
   description = "Name of the resource group that Azure DevOps created for billing (exempt from the region policy)."
   type        = string
 }
+
+variable "devops_infrastructure_principal_id" {
+  description = "Object identifier of the DevOpsInfrastructure service principal (Managed DevOps Pools) in the tenant."
+  type        = string
+}

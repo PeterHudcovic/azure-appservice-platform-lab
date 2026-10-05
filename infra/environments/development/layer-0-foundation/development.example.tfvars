@@ -13,3 +13,5 @@ budget_amount        = 100
 budget_contact_email = "<alert-recipient@example.com>"
 
 azure_devops_billing_resource_group = "<azure-devops-billing-resource-group-name>"
+
+devops_infrastructure_principal_id = "<object-id-of-the-DevOpsInfrastructure-service-principal>"
