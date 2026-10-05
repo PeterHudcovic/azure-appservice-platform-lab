@@ -34,7 +34,9 @@ resource "azurerm_windows_virtual_machine" "ops" {
   computer_name         = "ops-${local.environment}"
   resource_group_name   = data.azurerm_resource_group.network.name
   location              = data.azurerm_resource_group.network.location
-  size                  = "Standard_D2s_v5"
+  # Standard_D2s_v6: the subscription has no Dsv5 quota in Sweden Central (limit 0); v6 sizes use the NVMe disk controller
+  size                  = "Standard_D2s_v6"
+  disk_controller_type  = "NVMe"
   zone                  = "1"
   admin_username        = "opsadmin"
   admin_password        = random_password.ops_vm_admin.result
