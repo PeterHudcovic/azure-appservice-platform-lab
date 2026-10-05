@@ -35,7 +35,7 @@ resource "azurerm_managed_devops_pool" "main" {
 
   azure_devops_organization {
     organization {
-      url         = var.azure_devops_organization_url
+      url         = trimsuffix(var.azure_devops_organization_url, "/") # the pipeline passes it with a trailing slash
       parallelism = 1
       projects    = [var.azure_devops_project]
     }
