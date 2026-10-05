@@ -56,10 +56,6 @@ data "azurerm_application_insights" "main" {
   resource_group_name = local.monitoring_resource_group
 }
 
-data "azuread_application" "app" {
-  display_name = "app-sits-${local.environment}"
-}
-
 # Resources owned by layer 1, found by their fixed names
 data "azurerm_subnet" "main" {
   for_each = toset(["snet-agw", "snet-pe", "snet-app"])
