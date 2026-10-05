@@ -1,0 +1,44 @@
+# Removes development layers 2 and then 1 (layer 0 stays). Manual start only, with its own identity
+# (dev-destroy) and its own environment. Created for the demonstration; not run during the build of the lab.
+trigger: none
+pr: none
+
+stages:
+  - stage: destroy_layer2
+    displayName: Destroy development layer 2
+    jobs:
+      - deployment: terraform
+        displayName: Terraform destroy layer 2
+        pool: mdp-sits-dev-infra-swc
+        environment: dev-destroy
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: templates/terraform-steps.yml
+                  parameters:
+                    layerDirectory: infra/environments/development/layer-2-application
+                    serviceConnection: dev-destroy
+                    expectedSubscriptionName: sub-app-nonprod
+                    destroy: true
+
+  - stage: destroy_layer1
+    displayName: Destroy development layer 1
+    dependsOn: destroy_layer2
+    jobs:
+      - deployment: terraform
+        displayName: Terraform destroy layer 1
+        pool:
+          vmImage: ubuntu-24.04
+        environment: dev-destroy
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: templates/terraform-steps.yml
+                  parameters:
+                    layerDirectory: infra/environments/development/layer-1-network-operations
+                    serviceConnection: dev-destroy
+                    expectedSubscriptionName: sub-app-nonprod
+                    destroy: true
+                    extraVariables: -var="azure_devops_organization_url=$(System.CollectionUri)" -var="azure_devops_project=$(System.TeamProject)"

@@ -1,0 +1,59 @@
+# Shared Terraform steps for one layer of one environment.
+# Authentication: the service connection (workload identity federation) through OIDC, no secrets.
+# The pipeline stops before any change when the service connection points to an unexpected subscription.
+parameters:
+  - name: layerDirectory
+    type: string
+  - name: serviceConnection
+    type: string
+  - name: expectedSubscriptionName
+    type: string
+  - name: extraVariables
+    type: string
+    default: ""
+  - name: destroy
+    type: boolean
+    default: false
+
+steps:
+  - checkout: self
+
+  - script: |
+      set -euo pipefail
+      version="1.16.2"
+      curl -fsSLo "$(Agent.TempDirectory)/terraform.zip" "https://releases.hashicorp.com/terraform/${version}/terraform_${version}_linux_amd64.zip"
+      unzip -o -q "$(Agent.TempDirectory)/terraform.zip" -d "$(Agent.TempDirectory)/terraform"
+      echo "##vso[task.prependpath]$(Agent.TempDirectory)/terraform"
+    displayName: Install Terraform
+
+  - task: AzureCLI@2
+    displayName: Terraform plan and apply
+    inputs:
+      azureSubscription: ${{ parameters.serviceConnection }}
+      scriptType: bash
+      scriptLocation: inlineScript
+      addSpnToEnvironment: true
+      workingDirectory: ${{ parameters.layerDirectory }}
+      inlineScript: |
+        set -euo pipefail
+
+        subscription_name="$(az account show --query name -o tsv)"
+        if [ "$subscription_name" != "${{ parameters.expectedSubscriptionName }}" ]; then
+          echo "##vso[task.logissue type=error]The service connection points to an unexpected subscription. Nothing was changed."
+          exit 1
+        fi
+
+        export ARM_USE_OIDC=true
+        export ARM_CLIENT_ID="$servicePrincipalId"
+        export ARM_OIDC_TOKEN="$idToken"
+        export ARM_TENANT_ID="$tenantId"
+        ARM_SUBSCRIPTION_ID="$(az account show --query id -o tsv)"
+        export ARM_SUBSCRIPTION_ID
+
+        terraform version
+        terraform init -input=false -backend-config="subscription_id=${ARM_SUBSCRIPTION_ID}"
+        terraform plan -input=false ${{ iif(parameters.destroy, '-destroy', '') }} \
+          -var="subscription_id=${ARM_SUBSCRIPTION_ID}" -var="location=swedencentral" ${{ parameters.extraVariables }} \
+          -out=tfplan
+        terraform apply -input=false tfplan
+        rm -f tfplan

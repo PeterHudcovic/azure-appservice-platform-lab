@@ -1,0 +1,24 @@
+# Development layer 1 (network and operations). Runs on a Microsoft-hosted agent, because layer 1 creates
+# the private agent pools itself. Manual start only.
+trigger: none
+pr: none
+
+stages:
+  - stage: layer1
+    displayName: Development layer 1
+    jobs:
+      - deployment: terraform
+        displayName: Terraform layer 1
+        pool:
+          vmImage: ubuntu-24.04
+        environment: dev
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: templates/terraform-steps.yml
+                  parameters:
+                    layerDirectory: infra/environments/development/layer-1-network-operations
+                    serviceConnection: dev-infra-l1
+                    expectedSubscriptionName: sub-app-nonprod
+                    extraVariables: -var="azure_devops_organization_url=$(System.CollectionUri)" -var="azure_devops_project=$(System.TeamProject)"

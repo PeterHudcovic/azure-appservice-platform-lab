@@ -1,0 +1,86 @@
+# Build: tests the application, creates a uniquely named ZIP package with its version, source commit,
+# and SHA-256 fingerprint, and stores it in the immutable package container.
+# Runs on a Microsoft-hosted agent. Pull requests run the checks only and never use the private pools.
+name: $(Date:yyyyMMdd).$(Rev:r)
+
+trigger:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - app
+
+pr:
+  branches:
+    include:
+      - main
+  paths:
+    include:
+      - app
+
+pool:
+  vmImage: ubuntu-24.04
+
+variables:
+  packageStorageAccount: stsitspkgswc
+  packageContainer: packages
+  pythonVersion: "3.12"
+
+steps:
+  - checkout: self
+
+  - task: UsePythonVersion@0
+    displayName: Use Python $(pythonVersion)
+    inputs:
+      versionSpec: $(pythonVersion)
+
+  - script: python -m unittest discover -s app -v
+    displayName: Run unit tests
+
+  - script: |
+      set -euo pipefail
+      commit="$(git rev-parse --short=12 HEAD)"
+      name="sits-app-$(Build.BuildNumber)-${commit}"
+      staging="$(Build.ArtifactStagingDirectory)"
+      mkdir -p "${staging}/package"
+
+      cp app/app.py "${staging}/package/"
+      # Dependencies for Linux and Python 3.12 are bundled; App Service does not build the package
+      python -m pip install --disable-pip-version-check --no-cache-dir \
+        --target "${staging}/package/packages" \
+        --platform manylinux2014_x86_64 --implementation cp --python-version $(pythonVersion) --only-binary=:all: \
+        -r app/requirements.txt
+      printf '{"version": "%s", "commit": "%s"}\n' "$(Build.BuildNumber)" "${commit}" > "${staging}/package/version.json"
+
+      (cd "${staging}/package" && zip -q -r -X "${staging}/${name}.zip" .)
+      sha256="$(sha256sum "${staging}/${name}.zip" | cut -d ' ' -f 1)"
+
+      mkdir -p "${staging}/manifest"
+      printf '{"package": "%s.zip", "version": "%s", "commit": "%s", "sha256": "%s"}\n' \
+        "${name}" "$(Build.BuildNumber)" "$(Build.SourceVersion)" "${sha256}" > "${staging}/manifest/manifest.json"
+      cat "${staging}/manifest/manifest.json"
+      echo "##vso[task.setvariable variable=packageName]${name}"
+    displayName: Create package and fingerprint
+
+  - task: AzureCLI@2
+    displayName: Store package in the immutable container
+    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+    inputs:
+      azureSubscription: build
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: |
+        set -euo pipefail
+        staging="$(Build.ArtifactStagingDirectory)"
+        for file in "${staging}/$(packageName).zip" "${staging}/manifest/manifest.json"; do
+          blob="$(basename "${file}")"
+          if [ "${blob}" = "manifest.json" ]; then blob="$(packageName).manifest.json"; fi
+          az storage blob upload --auth-mode login --account-name "$(packageStorageAccount)" \
+            --container-name "$(packageContainer)" --name "${blob}" --file "${file}" --overwrite false --only-show-errors
+        done
+
+  - publish: $(Build.ArtifactStagingDirectory)/manifest
+    displayName: Publish manifest
+    artifact: manifest
+    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
