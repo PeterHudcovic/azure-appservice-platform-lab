@@ -50,7 +50,9 @@ resource "azurerm_managed_devops_pool" "main" {
     subnet_id = azurerm_subnet.main[each.value].id
 
     image {
-      well_known_image_name = "ubuntu-24.04/latest"
+      # Azure stores the image as "ubuntu-24.04" with these aliases; the code matches it to avoid drift
+      well_known_image_name = "ubuntu-24.04"
+      aliases               = ["ubuntu-24.04/latest", "ubuntu-24.04"]
     }
   }
 }
