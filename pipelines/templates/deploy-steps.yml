@@ -45,13 +45,15 @@ steps:
           --file "$(Agent.TempDirectory)/${package}" --only-show-errors --output none
         echo "${expected}  $(Agent.TempDirectory)/${package}" | sha256sum --check
 
+        # The built-in start tracking can time out while App Service unblocks a site that had no code yet;
+        # the health check in the next step verifies the real result
         az webapp deploy --resource-group "${{ parameters.resourceGroup }}" --name "${{ parameters.webAppName }}" \
-          --src-path "$(Agent.TempDirectory)/${package}" --type zip --async false --only-show-errors
+          --src-path "$(Agent.TempDirectory)/${package}" --type zip --async false --track-status false --only-show-errors
 
   - script: |
       set -euo pipefail
       # /health is excluded from sign-in and checks the vault access of the application identity
-      for attempt in $(seq 1 20); do
+      for attempt in $(seq 1 40); do
         code="$(curl -s -o health.json -w '%{http_code}' "https://${{ parameters.webAppName }}.azurewebsites.net/health" || true)"
         echo "Attempt ${attempt}: HTTP ${code}"
         if [ "${code}" = "200" ]; then cat health.json; exit 0; fi
