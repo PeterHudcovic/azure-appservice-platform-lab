@@ -48,6 +48,8 @@
 | Quotas | Dsv6 10 vCPU and Managed DevOps Pools DADSv5 5 vCPU in the production subscription |
 | Deploy run 6 (`sits-deploy-prod`, package `20261005.1`, the same as development and testing) | Peter authorized the service connection, pool, and environment and approved the `prod-app` check; SHA-256 verified, deployed through the private `.scm` endpoint, health check HTTP 200 with `"environment": "prod"` and Key Vault access (after five 503 responses during the first start), anonymous request to `/` refused |
 | Gateway backend health | Healthy |
+| End-to-end test by Peter from the production Ops VM through Bastion Basic (local account `opsadmin`; Lab Admin has no Entra ID VM login role by design) | `https://app.prod.sits.internal` shows environment `prod`, package `20261005.1`, signed-in Lab Admin, Key Vault check OK |
+| Isolation test by Peter from the development Ops VM | `app.prod.sits.internal` does not resolve (NXDOMAIN): the production private DNS zone is linked only to the production network |
 
 ## Incident and fixes
 
