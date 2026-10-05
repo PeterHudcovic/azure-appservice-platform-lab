@@ -1,5 +1,5 @@
 # Development layer 2 (application platform). Runs on the private infrastructure pool inside the network.
-# Manual start only.
+# Manual start only. Pipeline variables (set in Azure DevOps, not in the repository): alertEmail, appClientId.
 trigger: none
 pr: none
 
@@ -20,3 +20,4 @@ stages:
                     layerDirectory: infra/environments/development/layer-2-application
                     serviceConnection: dev-infra-l2
                     expectedSubscriptionName: sub-app-nonprod
+                    extraVariables: -var="alert_email=$(alertEmail)" -var="app_client_id=$(appClientId)"
