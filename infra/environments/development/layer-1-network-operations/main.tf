@@ -26,7 +26,7 @@ locals {
     }
     snet-agw = {
       prefix     = "10.10.4.0/24"
-      delegation = { name = "Microsoft.Network/applicationGateways", actions = ["Microsoft.Network/virtualNetworks/subnets/action"] }
+      delegation = { name = "Microsoft.Network/applicationGateways", actions = ["Microsoft.Network/virtualNetworks/subnets/join/action"] }
     }
     snet-pe = {
       prefix     = "10.10.5.0/24"
