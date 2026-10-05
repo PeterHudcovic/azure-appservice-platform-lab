@@ -364,3 +364,50 @@ resource "azurerm_role_assignment" "pipeline_management" {
   role_definition_name = "Contributor"
   principal_id         = azurerm_user_assigned_identity.pipeline[each.value.identity].principal_id
 }
+
+# Entra ID app registration for user sign-in to the application (no client secret: trusts the application managed identity)
+resource "azuread_application" "app" {
+  display_name     = "app-sits-${local.environment}"
+  sign_in_audience = "AzureADMyOrg"
+
+  web {
+    redirect_uris = ["https://app.${local.environment}.sits.internal/.auth/login/aad/callback"]
+
+    implicit_grant {
+      id_token_issuance_enabled = true
+    }
+  }
+
+  required_resource_access {
+    resource_app_id = "00000003-0000-0000-c000-000000000000"
+
+    resource_access {
+      id   = "e1fe6dd8-ba31-4d61-89e7-88639da4683d"
+      type = "Scope"
+    }
+  }
+}
+
+resource "azuread_application_federated_identity_credential" "app" {
+  application_id = azuread_application.app.id
+  display_name   = "app-managed-identity"
+  audiences      = ["api://AzureADTokenExchange"]
+  issuer         = "https://login.microsoftonline.com/${data.azurerm_client_config.current.tenant_id}/v2.0"
+  subject        = azurerm_user_assigned_identity.app.principal_id
+}
+
+resource "azuread_service_principal" "app" {
+  client_id                    = azuread_application.app.client_id
+  app_role_assignment_required = true
+}
+
+resource "azuread_group" "app_users" {
+  display_name     = "grp-sits-${local.environment}-app-users"
+  security_enabled = true
+}
+
+resource "azuread_app_role_assignment" "app_users" {
+  app_role_id         = "00000000-0000-0000-0000-000000000000"
+  principal_object_id = azuread_group.app_users.object_id
+  resource_object_id  = azuread_service_principal.app.object_id
+}
