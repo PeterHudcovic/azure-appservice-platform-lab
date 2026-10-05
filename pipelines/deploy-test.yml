@@ -1,0 +1,32 @@
+# Deploy to testing: the same package as development (same SHA-256 fingerprint), read-only from the immutable
+# container, with the testing settings. Runs after a successful build of main; no approval (design).
+trigger: none
+pr: none
+
+resources:
+  pipelines:
+    - pipeline: build
+      source: sits-build
+      trigger:
+        branches:
+          include:
+            - main
+
+stages:
+  - stage: deploy_test
+    displayName: Deploy to testing
+    jobs:
+      - deployment: deploy
+        displayName: Deploy package
+        pool: mdp-sits-test-app-swc
+        environment: test
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: templates/deploy-steps.yml
+                  parameters:
+                    serviceConnection: test-deploy
+                    expectedSubscriptionName: sub-app-nonprod
+                    resourceGroup: rg-sits-test-app-swc
+                    webAppName: app-sits-test-swc

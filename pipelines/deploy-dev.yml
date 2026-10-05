@@ -13,13 +13,6 @@ resources:
           include:
             - main
 
-variables:
-  packageStorageAccount: stsitspkgswc
-  packageContainer: packages
-  resourceGroup: rg-sits-dev-app-swc
-  webAppName: app-sits-dev-swc
-  expectedSubscriptionName: sub-app-nonprod
-
 stages:
   - stage: deploy_dev
     displayName: Deploy to development
@@ -32,45 +25,9 @@ stages:
           runOnce:
             deploy:
               steps:
-                - download: build
-                  artifact: manifest
-
-                - task: AzureCLI@2
-                  displayName: Verify and deploy the package
-                  inputs:
-                    azureSubscription: dev-deploy
-                    scriptType: bash
-                    scriptLocation: inlineScript
-                    inlineScript: |
-                      set -euo pipefail
-
-                      if [ "$(az account show --query name -o tsv)" != "$(expectedSubscriptionName)" ]; then
-                        echo "##vso[task.logissue type=error]The service connection points to an unexpected subscription. Nothing was changed."
-                        exit 1
-                      fi
-
-                      manifest="$(Pipeline.Workspace)/build/manifest/manifest.json"
-                      cat "${manifest}"
-                      package="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["package"])' "${manifest}")"
-                      expected="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["sha256"])' "${manifest}")"
-
-                      az storage blob download --auth-mode login --account-name "$(packageStorageAccount)" \
-                        --container-name "$(packageContainer)" --name "${package}" \
-                        --file "$(Agent.TempDirectory)/${package}" --only-show-errors --output none
-                      echo "${expected}  $(Agent.TempDirectory)/${package}" | sha256sum --check
-
-                      az webapp deploy --resource-group "$(resourceGroup)" --name "$(webAppName)" \
-                        --src-path "$(Agent.TempDirectory)/${package}" --type zip --async false --only-show-errors
-
-                - script: |
-                    set -euo pipefail
-                    # /health is excluded from sign-in and checks the vault access of the application identity
-                    for attempt in $(seq 1 20); do
-                      code="$(curl -s -o health.json -w '%{http_code}' "https://$(webAppName).azurewebsites.net/health" || true)"
-                      echo "Attempt ${attempt}: HTTP ${code}"
-                      if [ "${code}" = "200" ]; then cat health.json; exit 0; fi
-                      sleep 15
-                    done
-                    cat health.json || true
-                    exit 1
-                  displayName: Smoke test through the private endpoint
+                - template: templates/deploy-steps.yml
+                  parameters:
+                    serviceConnection: dev-deploy
+                    expectedSubscriptionName: sub-app-nonprod
+                    resourceGroup: rg-sits-dev-app-swc
+                    webAppName: app-sits-dev-swc
