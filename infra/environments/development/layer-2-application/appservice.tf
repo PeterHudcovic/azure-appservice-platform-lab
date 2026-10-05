@@ -45,6 +45,8 @@ resource "azurerm_linux_web_app" "main" {
     vnet_route_all_enabled            = true
     health_check_path                 = "/health"
     health_check_eviction_time_in_min = 10
+    # The demo application uses only the Python standard library server; its Azure SDK packages ship in the package
+    app_command_line = "python app.py"
 
     application_stack {
       python_version = "3.12"
