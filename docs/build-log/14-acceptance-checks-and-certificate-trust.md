@@ -45,6 +45,16 @@ The WAF certificates are self-signed in the certificate vaults (lab limitation; 
 
 Limits: the import is an operational step outside Terraform. It must be repeated when the certificate is renewed (Key Vault policy: 12 months) or when layer 1 recreates an Ops VM. Each Ops VM trusts only its own environment's certificate.
 
+## Production administrator sign-in (test by Peter)
+
+| Check | Result (reported by Peter) |
+| --- | --- |
+| `admin-prod` signs in to `vm-sits-prod-ops-swc` through Bastion Basic with Microsoft Entra ID authentication | Succeeded with MFA (multifactor authentication) using a passkey |
+| Identity on the Ops VM (`whoami`) | `azuread\prodadmin`: an Entra ID account, not the local emergency account `opsadmin` |
+| What `admin-prod` sees in the Azure portal | Only the production VM; no non-production resources |
+
+This confirms the production access design: `admin-prod` signs in to the Ops VM through its permanent Virtual Machine User Login role and the `AADLoginForWindows` extension, and its permanent Reader role covers only the production subscription. Its PIM eligible roles were not activated for this test. No Azure configuration was changed for this record.
+
 ## Remaining work
 
 1. Remove `temporary.tf` in each layer 0 (Lab Admin state roles for layers 1 and 2); waits for Peter's decision because it removes Lab Admin role assignments.
