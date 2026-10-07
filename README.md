@@ -1,5 +1,9 @@
 # Azure App Service Platform Lab
 
+> **[Azure Lab Guide — PDF (152 pages)](https://peterhudcovic.tech/output/pdf/Azure-Lab-Guide.pdf?v=20261007-monitoring)**
+>
+> Open or download the complete demo guide: accounts, sign-in, architecture, screenshots and runtime monitoring evidence.
+
 An educational project exploring the design of an application platform in Microsoft Azure.
 
 **Status: Built.** Development, testing, and production are deployed with Terraform in three layers each, and a demo application is delivered through Azure DevOps pipelines. The detailed results, deviations, and open items are in the [build records](docs/build-log/).
