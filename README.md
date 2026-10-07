@@ -1,6 +1,6 @@
 # Azure App Service Platform Lab
 
-> **[Azure Lab Guide — PDF (152 pages)](https://peterhudcovic.tech/output/pdf/Azure-Lab-Guide.pdf?v=20261007-monitoring)**
+> **[Azure Lab Guide — PDF (154 pages)](https://peterhudcovic.tech/output/pdf/Azure-Lab-Guide.pdf?v=20261007-contents)**
 >
 > Open or download the complete demo guide: accounts, sign-in, architecture, screenshots and runtime monitoring evidence.
 
