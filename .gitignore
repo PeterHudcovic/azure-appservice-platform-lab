@@ -63,6 +63,10 @@ id_ecdsa.*
 id_ed25519
 id_ed25519.*
 
+# Python bytecode caches
+__pycache__/
+*.pyc
+
 # Local editor settings and temporary files
 .vscode/
 .idea/

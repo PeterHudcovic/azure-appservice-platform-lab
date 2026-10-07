@@ -1,0 +1,33 @@
+# Deploy to development: runs automatically after a successful build of main.
+# The application agent reads the package from the immutable container, verifies its SHA-256 fingerprint,
+# and deploys it through the private .scm endpoint with Microsoft Entra ID authentication (basic auth is disabled).
+trigger: none
+pr: none
+
+resources:
+  pipelines:
+    - pipeline: build
+      source: sits-build
+      trigger:
+        branches:
+          include:
+            - main
+
+stages:
+  - stage: deploy_dev
+    displayName: Deploy to development
+    jobs:
+      - deployment: deploy
+        displayName: Deploy package
+        pool: mdp-sits-dev-app-swc
+        environment: dev
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: templates/deploy-steps.yml
+                  parameters:
+                    serviceConnection: dev-deploy
+                    expectedSubscriptionName: sub-app-nonprod
+                    resourceGroup: rg-sits-dev-app-swc
+                    webAppName: app-sits-dev-swc

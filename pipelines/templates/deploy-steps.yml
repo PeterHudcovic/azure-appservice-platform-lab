@@ -1,0 +1,72 @@
+# Shared deployment steps: read the package from the immutable container, verify its SHA-256 fingerprint,
+# deploy it through the private .scm endpoint with Microsoft Entra ID authentication (basic auth is disabled),
+# and check the health endpoint through the private endpoint.
+parameters:
+  - name: serviceConnection
+    type: string
+  - name: expectedSubscriptionName
+    type: string
+  - name: resourceGroup
+    type: string
+  - name: webAppName
+    type: string
+  - name: packageStorageAccount
+    type: string
+    default: stsitspkgswc
+  - name: packageContainer
+    type: string
+    default: packages
+
+steps:
+  - download: build
+    artifact: manifest
+
+  - task: AzureCLI@2
+    displayName: Verify and deploy the package
+    inputs:
+      azureSubscription: ${{ parameters.serviceConnection }}
+      scriptType: bash
+      scriptLocation: inlineScript
+      inlineScript: |
+        set -euo pipefail
+
+        if [ "$(az account show --query name -o tsv)" != "${{ parameters.expectedSubscriptionName }}" ]; then
+          echo "##vso[task.logissue type=error]The service connection points to an unexpected subscription. Nothing was changed."
+          exit 1
+        fi
+
+        manifest="$(Pipeline.Workspace)/build/manifest/manifest.json"
+        cat "${manifest}"
+        package="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["package"])' "${manifest}")"
+        expected="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["sha256"])' "${manifest}")"
+
+        az storage blob download --auth-mode login --account-name "${{ parameters.packageStorageAccount }}" \
+          --container-name "${{ parameters.packageContainer }}" --name "${package}" \
+          --file "$(Agent.TempDirectory)/${package}" --only-show-errors --output none
+        echo "${expected}  $(Agent.TempDirectory)/${package}" | sha256sum --check
+
+        # The built-in start tracking can time out while App Service unblocks a site that had no code yet;
+        # the health check in the next step verifies the real result
+        az webapp deploy --resource-group "${{ parameters.resourceGroup }}" --name "${{ parameters.webAppName }}" \
+          --src-path "$(Agent.TempDirectory)/${package}" --type zip --async false --track-status false --only-show-errors
+
+  - script: |
+      set -euo pipefail
+      # /health is excluded from sign-in and checks the vault access of the application identity
+      for attempt in $(seq 1 40); do
+        code="$(curl -s -o health.json -w '%{http_code}' "https://${{ parameters.webAppName }}.azurewebsites.net/health" || true)"
+        echo "Attempt ${attempt}: HTTP ${code}"
+        if [ "${code}" = "200" ]; then cat health.json; exit 0; fi
+        sleep 15
+      done
+      cat health.json || true
+      exit 1
+    displayName: Health check through the private endpoint
+
+  - script: |
+      set -euo pipefail
+      # Every other path requires sign-in: an anonymous request is redirected to Microsoft Entra ID
+      code="$(curl -s -o /dev/null -w '%{http_code}' "https://${{ parameters.webAppName }}.azurewebsites.net/")"
+      echo "Anonymous request to /: HTTP ${code}"
+      [ "${code}" = "302" ] || [ "${code}" = "401" ]
+    displayName: Sign-in is required

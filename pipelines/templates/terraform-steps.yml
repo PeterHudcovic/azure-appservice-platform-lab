@@ -1,0 +1,93 @@
+# Shared Terraform steps for one layer of one environment.
+# Authentication: the service connection (workload identity federation) through OIDC, no secrets.
+# The pipeline stops before any change when the service connection points to an unexpected subscription.
+# Apply runs only when the plan shows changes; a second plan must then show no changes, or the run fails.
+# With planOnly the steps stop after the first plan (used before a manual approval).
+parameters:
+  - name: layerDirectory
+    type: string
+  - name: serviceConnection
+    type: string
+  - name: expectedSubscriptionName
+    type: string
+  - name: extraVariables
+    type: string
+    default: ""
+  - name: destroy
+    type: boolean
+    default: false
+  - name: planOnly
+    type: boolean
+    default: false
+
+steps:
+  - checkout: self
+
+  - script: |
+      set -euo pipefail
+      version="1.16.2"
+      curl -fsSLo "$(Agent.TempDirectory)/terraform.zip" "https://releases.hashicorp.com/terraform/${version}/terraform_${version}_linux_amd64.zip"
+      unzip -o -q "$(Agent.TempDirectory)/terraform.zip" -d "$(Agent.TempDirectory)/terraform"
+      echo "##vso[task.prependpath]$(Agent.TempDirectory)/terraform"
+    displayName: Install Terraform
+
+  - task: AzureCLI@2
+    displayName: ${{ iif(parameters.planOnly, 'Terraform plan', 'Terraform plan, apply, and verify') }}
+    inputs:
+      azureSubscription: ${{ parameters.serviceConnection }}
+      scriptType: bash
+      scriptLocation: inlineScript
+      addSpnToEnvironment: true
+      workingDirectory: ${{ parameters.layerDirectory }}
+      inlineScript: |
+        set -euo pipefail
+
+        subscription_name="$(az account show --query name -o tsv)"
+        if [ "$subscription_name" != "${{ parameters.expectedSubscriptionName }}" ]; then
+          echo "##vso[task.logissue type=error]The service connection points to an unexpected subscription. Nothing was changed."
+          exit 1
+        fi
+
+        export ARM_USE_OIDC=true
+        export ARM_CLIENT_ID="$servicePrincipalId"
+        export ARM_OIDC_TOKEN="$idToken"
+        export ARM_TENANT_ID="$tenantId"
+        ARM_SUBSCRIPTION_ID="$(az account show --query id -o tsv)"
+        export ARM_SUBSCRIPTION_ID
+
+        terraform version
+        terraform init -input=false -backend-config="subscription_id=${ARM_SUBSCRIPTION_ID}"
+
+        plan_exit=0
+        terraform plan -input=false -detailed-exitcode ${{ iif(parameters.destroy, '-destroy', '') }} \
+          -var="subscription_id=${ARM_SUBSCRIPTION_ID}" -var="location=swedencentral" ${{ parameters.extraVariables }} \
+          -out=tfplan || plan_exit=$?
+
+        if [ "$plan_exit" -eq 1 ]; then
+          echo "##vso[task.logissue type=error]Terraform plan failed. Nothing was changed."
+          exit 1
+        fi
+
+        if [ "${{ parameters.planOnly }}" = "True" ]; then
+          rm -f tfplan
+          echo "Plan only: nothing was applied."
+          exit 0
+        fi
+
+        if [ "$plan_exit" -eq 2 ]; then
+          terraform apply -input=false tfplan
+        else
+          echo "No changes: apply skipped."
+        fi
+        rm -f tfplan
+
+        verify_exit=0
+        terraform plan -input=false -detailed-exitcode ${{ iif(parameters.destroy, '-destroy', '') }} \
+          -var="subscription_id=${ARM_SUBSCRIPTION_ID}" -var="location=swedencentral" ${{ parameters.extraVariables }} \
+          || verify_exit=$?
+
+        if [ "$verify_exit" -ne 0 ]; then
+          echo "##vso[task.logissue type=error]The verification plan does not show No changes (exit code ${verify_exit})."
+          exit 1
+        fi
+        echo "Verification plan: No changes."

@@ -1,0 +1,43 @@
+# Production layer 1 (network and operations). Runs on a Microsoft-hosted agent, because layer 1 creates
+# the private agent pools itself. Manual start only.
+# Stage 1 shows the plan and changes nothing. Stage 2 waits for manual approval on the prod-infra
+# environment, then plans again, applies only when there are changes, and verifies No changes.
+trigger: none
+pr: none
+
+stages:
+  - stage: plan
+    displayName: Production layer 1 plan
+    jobs:
+      - job: terraform_plan
+        displayName: Terraform plan layer 1
+        pool:
+          vmImage: ubuntu-24.04
+        steps:
+          - template: templates/terraform-steps.yml
+            parameters:
+              layerDirectory: infra/environments/production/layer-1-network-operations
+              serviceConnection: prod-infra-l1
+              expectedSubscriptionName: sub-app-prod
+              planOnly: true
+              extraVariables: -var="azure_devops_organization_url=$(System.CollectionUri)" -var="azure_devops_project=$(System.TeamProject)"
+
+  - stage: apply
+    displayName: Production layer 1 apply (after approval)
+    dependsOn: plan
+    jobs:
+      - deployment: terraform
+        displayName: Terraform layer 1
+        pool:
+          vmImage: ubuntu-24.04
+        environment: prod-infra
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: templates/terraform-steps.yml
+                  parameters:
+                    layerDirectory: infra/environments/production/layer-1-network-operations
+                    serviceConnection: prod-infra-l1
+                    expectedSubscriptionName: sub-app-prod
+                    extraVariables: -var="azure_devops_organization_url=$(System.CollectionUri)" -var="azure_devops_project=$(System.TeamProject)"

@@ -2,61 +2,57 @@
 
 An educational project exploring the design of an application platform in Microsoft Azure.
 
-**Status: Implementation is in preparation.** This repository contains a design summary, a documented directory structure, build logs, and an initial Terraform configuration for the development foundation layer. No infrastructure resources are defined in Terraform yet, and this configuration has not been used to deploy Azure resources. No application or environment-isolation tests have been run. The capabilities below describe the planned design.
+**Status: Built.** Development, testing, and production are deployed with Terraform in three layers each, and a demo application is delivered through Azure DevOps pipelines. The detailed results, deviations, and open items are in the [build records](docs/build-log/).
 
-## Planned design
+## Design
 
-- **Three isolated environments:** development, testing, and production. Each environment will have its own network, identities, Azure Key Vault instances, and Terraform state (infrastructure state).
-- **Two Azure subscriptions:** one subscription will host development and testing, while a separate subscription will host production. Development and testing will remain isolated from each other within their shared subscription.
-- **Private application entry point:** a Linux application will run in Azure App Service behind a private Azure Application Gateway with WAF (Web Application Firewall).
-- **Private endpoints:** the Web App, its deployment endpoint, and the application Key Vault will use Private Endpoints and environment-specific private DNS (Domain Name System) zones, with public access disabled.
-- **Private secret access:** the application will read secrets from its own Azure Key Vault through its managed identity.
-- **User sign-in:** Microsoft Entra ID (Identity) will authenticate users, and access to the application will be restricted to an assigned group.
-- **Three Terraform layers:** layer 0 will hold the persistent foundation, layer 1 the network and operations resources, and layer 2 the application platform. Each layer and environment will have a separate Terraform state.
-- **Repeatable environment lifecycle:** Terraform will support repeatable environment creation and controlled removal. After a lab presentation, layer 2 and then layer 1 can be removed while layer 0 remains. Secret recovery and package deletion will respect the configured retention and protection periods.
-- **Controlled delivery:** Azure DevOps (development and operations) will handle building, testing, and deployment. The same tested application package will be promoted to production only after approval, without rebuilding it.
-- **Governance:** Azure Policy will enforce tags, supported regions, and security settings. Budgets will provide alerts rather than act as hard spending limits.
-- **Planned verification:** monitoring and tests will be used to demonstrate application functionality and isolation between environments. These checks are planned and have not yet been performed.
-
-## Current scope
-
-The development foundation layer contains Terraform version constraints, provider settings, input variables, an anonymized configuration example, and a provider dependency lock file. Resource definitions, reusable module implementations, remote state storage, automation workflows, and a license have not been added.
-
-Work records: [01 - Preparation](docs/build-log/01-preparation.md) and [02 - Terraform Configuration](docs/build-log/02-terraform-configuration.md).
-
-Local Terraform directories, infrastructure state, saved plans, real environment configurations, secrets, private keys, and local editor settings are excluded from version control. Anonymized configuration examples may be committed using names such as `dev.example.tfvars`, `dev.example.tfvars.json`, `backend.example.hcl`, or `.env.example`. Examples must contain placeholders rather than real environment values or credentials.
-
-The development foundation's `.terraform.lock.hcl` dependency lock file is versioned to record the selected provider version and checksums. Dependency lock files should remain in version control.
+- **Three isolated environments:** development, testing, and production, each with its own network, identities, Azure Key Vault instances, and Terraform state (infrastructure state).
+- **Two Azure subscriptions:** one for development and testing, a separate Pay-As-You-Go subscription for production. Development and testing stay isolated within their shared subscription (no peering).
+- **Private application entry point:** a Linux application in Azure App Service behind a private Azure Application Gateway with WAF (Web Application Firewall). Users reach it only from the Ops VM (operations virtual machine) through Azure Bastion.
+- **Private endpoints:** the Web App, its deployment endpoint, and the application Key Vault use private endpoints and environment-specific private DNS (Domain Name System) zones, with public access disabled.
+- **Private secret access:** the application reads its own Key Vault through its managed identity; secrets never appear in settings or logs.
+- **User sign-in:** Microsoft Entra ID (Identity) authenticates users, only an assigned group is admitted, and the app registration has no client secret (it trusts the application managed identity).
+- **Three Terraform layers:** layer 0 the persistent foundation, layer 1 the network and operations resources, layer 2 the application platform; each layer and environment has its own state.
+- **Repeatable lifecycle:** layer 2 and then layer 1 can be removed while layer 0 remains; the application vault returns from soft delete with its secrets.
+- **Controlled delivery:** Azure DevOps builds one immutable package with a SHA-256 fingerprint; development and testing deploy it automatically, production only after approval, without rebuilding it. Private Managed DevOps Pools agents deploy through the private endpoints.
+- **Monitoring:** Log Analytics and Application Insights, with alerts for application health, gateway backend health, denied Key Vault access, and WAF matches.
+- **Governance:** Azure Policy for tags, the allowed region, HTTPS and TLS on web apps, and no public Key Vault access; budgets with alerts; in production PIM (Privileged Identity Management), report-only Conditional Access, and delete locks.
 
 ## Repository structure
 
 ```text
+app/                         Demo application (page and /health) and its unit tests
+pipelines/                   Azure DevOps pipelines and shared templates
 infra/
   environments/
-    development/
+    development/  testing/  production/
       layer-0-foundation/
       layer-1-network-operations/
       layer-2-application/
-    testing/
-      layer-0-foundation/
-      layer-1-network-operations/
-      layer-2-application/
-    production/
-      layer-0-foundation/
-      layer-1-network-operations/
-      layer-2-application/
-  modules/
+  modules/                   Reserved for reusable modules (see Next steps)
+docs/build-log/              Step-by-step build records
 ```
 
-The `infra/` directory holds infrastructure code and descriptions of the planned layers. The development foundation layer contains the initial Terraform configuration; the other layer directories currently contain documentation only. Each environment and layer is intended to have a separate Terraform root configuration (a directory from which Terraform manages a set of resources), with its own Terraform state (infrastructure state). Remote state storage and its access controls have not yet been configured.
-
-| Layer | Planned responsibility | Planned lifecycle |
+| Layer | Responsibility | Lifecycle |
 | --- | --- | --- |
-| 0: Foundation | Persistent resources, including infrastructure for storing Terraform state | Retained during routine environment removal |
-| 1: Network and operations | The environment's network and operational services | Created before layer 2; removed after layer 2 |
-| 2: Application | The environment's application platform | Created after layer 1; removed before layer 1 |
+| 0: Foundation | State storage, identities, vaults for the WAF certificate and emergency password, monitoring, policy, roles | Retained |
+| 1: Network and operations | Virtual network, network security, NAT, private DNS, vault private endpoints, Ops VM, Bastion, flow logs, private agent pools | Created before layer 2, removed after it |
+| 2: Application | Application vault, App Service, Application Gateway with WAF, DNS record, diagnostics | Created after layer 1, removed before it |
 
-The `infra/modules/` directory will contain reusable Terraform building blocks. Environments will use the same code to create their own resources. Modules will not have independent state; their resources will be tracked in the state of the root configuration that calls them.
+Testing and production are copies of the development layers with environment values. Layer 0 is applied by an administrator; layers 1 and 2 run through Azure DevOps infrastructure pipelines with their own identities, which apply only when the plan shows changes and then verify that a second plan shows no changes. Production applies only after manual approval of the plan.
+
+## Next steps
+
+Possible future improvements, not part of the current build:
+
+- **Terraform modules:** move the code shared by the three environments into reusable modules in `infra/modules/`.
+- **WAF Prevention mode:** switch the WAF policies from Detection to Prevention after reviewing the detected requests.
+- **Conditional Access enforcement:** switch the production Conditional Access policies from report-only to enforced after reviewing their sign-in reports.
+- **Certificate from a certificate authority:** replace the self-signed WAF certificates with certificates from a company certificate authority that the operations machines already trust.
+
+## Configuration files
+
+Local Terraform directories, infrastructure state, saved plans, real environment values (`*.tfvars`, `backend.hcl`), secrets, private keys, and local editor settings are excluded from version control. Each layer has anonymized examples (`*.example.tfvars`, `backend.example.hcl`) with placeholders only. Dependency lock files (`.terraform.lock.hcl`) are versioned.
 
 ## Author
 

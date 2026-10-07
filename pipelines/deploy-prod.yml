@@ -1,0 +1,29 @@
+# Deploy to production: the same package that testing verified (same SHA-256 fingerprint), only after approval
+# in the prod-app environment. The approval page shows the exact build run; the fingerprint is verified again
+# on the production agent before deployment. Manual start only.
+trigger: none
+pr: none
+
+resources:
+  pipelines:
+    - pipeline: build
+      source: sits-build
+
+stages:
+  - stage: deploy_prod
+    displayName: Deploy to production
+    jobs:
+      - deployment: deploy
+        displayName: Deploy approved package
+        pool: mdp-sits-prod-app-swc
+        environment: prod-app
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: templates/deploy-steps.yml
+                  parameters:
+                    serviceConnection: prod-deploy
+                    expectedSubscriptionName: sub-app-prod
+                    resourceGroup: rg-sits-prod-app-swc
+                    webAppName: app-sits-prod-swc

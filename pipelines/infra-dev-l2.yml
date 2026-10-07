@@ -1,0 +1,23 @@
+# Development layer 2 (application platform). Runs on the private infrastructure pool inside the network.
+# Manual start only. Pipeline variables (set in Azure DevOps, not in the repository): alertEmail, appClientId.
+trigger: none
+pr: none
+
+stages:
+  - stage: layer2
+    displayName: Development layer 2
+    jobs:
+      - deployment: terraform
+        displayName: Terraform layer 2
+        pool: mdp-sits-dev-infra-swc
+        environment: dev
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - template: templates/terraform-steps.yml
+                  parameters:
+                    layerDirectory: infra/environments/development/layer-2-application
+                    serviceConnection: dev-infra-l2
+                    expectedSubscriptionName: sub-app-nonprod
+                    extraVariables: -var="alert_email=$(alertEmail)" -var="app_client_id=$(appClientId)"
